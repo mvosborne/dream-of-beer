@@ -1,0 +1,6 @@
+{
+  "glob": ["public/js/controllers/*.js",
+        "public/js/directives/*.js",
+        "public/js/app.js"],
+  "github": true
+}

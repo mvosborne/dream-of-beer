@@ -1,0 +1,232 @@
+<!DOCTYPE html><html lang="en"><head><title>public/js/directives/ngTreeMap</title></head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0"><meta name="groc-relative-root" content="../../../"><meta name="groc-document-path" content="public/js/directives/ngTreeMap"><meta name="groc-project-path" content="public/js/directives/ngTreeMap.js"><link rel="stylesheet" type="text/css" media="all" href="../../../assets/style.css"><script type="text/javascript" src="../../../assets/behavior.js"></script><body><div id="meta"><div class="file-path">public/js/directives/ngTreeMap.js</div></div><div id="document"><div class="segment"><div class="code"><div class="wrapper">(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{ 
+<span class="hljs-pi">  'use strict'</span>;
+
+  angular.module(<span class="hljs-string">'myApp.directives'</span>)
+    .directive(<span class="hljs-string">'ngTreeMap'</span>, [<span class="hljs-string">'$window'</span>, <span class="hljs-string">'$timeout'</span>, <span class="hljs-string">'d3'</span>, 
+    <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">$window, $timeout, d3</span>) </span>{
+      <span class="hljs-keyword">return</span> {
+        restrict: <span class="hljs-string">'A'</span>,
+        controller: <span class="hljs-string">'beerCtrl'</span>,
+        scope: {
+          <span class="hljs-comment">//= means bi-directional binding between the local scope property and the parent property; </span>
+          <span class="hljs-comment">//if the parent model changes, just like normal data binding, then the local property will reflect the change</span>
+
+          <span class="hljs-comment">//@ means binding local scope (string) to value of the DOM's scope </span>
+          <span class="hljs-comment">//so the value of the outer scope is available inside directive's scope</span>
+
+          <span class="hljs-comment">//&amp; means parent execution binding so it executes a function in the context of the parent scope</span>
+          <span class="hljs-comment">//when setting the value, a function wrapper  will be created and point to the parent function</span>
+          data: <span class="hljs-string">'=?'</span>, <span class="hljs-comment">// make the data bind optional so it doesn't error when at first data is undefined</span>
+          label: <span class="hljs-string">'@'</span>,  
+          onClick: <span class="hljs-string">'&amp;'</span>
+        },
+        link: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">scope, ele, attrs</span>) </span>{
+          d3.d3().then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">d3</span>) </span>{
+            <span class="hljs-keyword">var</span> renderTimeout;
+            <span class="hljs-keyword">var</span> margin = {top: <span class="hljs-number">20</span>, right: <span class="hljs-number">0</span>, bottom: <span class="hljs-number">0</span>, left: <span class="hljs-number">0</span>};</div></div></div><div class="segment"><div class="comments "><div class="wrapper"><p>var svg = d3.select(ele[0])
+    .append(&#39;svg&#39;)
+    .attr(&#39;width&#39;, &#39;100%&#39;);</p></div></div><div class="code"><div class="wrapper">            <span class="hljs-keyword">var</span> svg = d3.select(ele[<span class="hljs-number">0</span>]).append(<span class="hljs-string">'svg'</span>);
+   
+            $<span class="hljs-built_in">window</span>.onresize = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>) </span>{
+              scope.$apply();
+            };
+
+            scope.getCategories();
+            scope.getStyles();
+
+            scope.$watch(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>) </span>{
+              <span class="hljs-keyword">return</span> angular.element($<span class="hljs-built_in">window</span>)[<span class="hljs-number">0</span>].innerWidth;
+            }, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>) </span>{
+              scope.render(scope.data);
+            });
+   </div></div></div><div class="segment"><div class="comments "><div class="wrapper"><p>scope.$watch(&#39;data&#39;, function(newData) {
+  scope.render(newData);</p></div></div><div class="code"><div class="wrapper">            <span class="hljs-comment">// , true);</span>
+
+            scope.render = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">data</span>) </span>{
+              svg.selectAll(<span class="hljs-string">'*'</span>).remove();
+   
+              <span class="hljs-keyword">if</span> (!data) {
+                <span class="hljs-built_in">console</span>.log(<span class="hljs-string">"no data"</span>);
+                <span class="hljs-keyword">return</span>;
+              }
+              <span class="hljs-keyword">if</span> (renderTimeout) clearTimeout(renderTimeout);
+   
+              renderTimeout = $timeout(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>) </span>{
+
+                <span class="hljs-keyword">var</span> width = <span class="hljs-built_in">window</span>.innerWidth,<span class="hljs-comment">//960 - margin.left - margin.right,</span>
+                    height = <span class="hljs-number">500</span> - margin.top - margin.bottom,<span class="hljs-comment">//1000 - margin.top - margin.bottom,</span>
+                    color = d3.scale.category20(),
+                    formatNumber = d3.format(<span class="hljs-string">",d"</span>),
+                    transitioning;
+
+                <span class="hljs-keyword">var</span> x = d3.scale.linear()
+                    .domain([<span class="hljs-number">0</span>, width])
+                    .range([<span class="hljs-number">0</span>, width]);
+
+                <span class="hljs-keyword">var</span> y = d3.scale.linear()
+                    .domain([<span class="hljs-number">0</span>, height])
+                    .range([<span class="hljs-number">0</span>, height]);
+
+                <span class="hljs-keyword">var</span> treemap = d3.layout.treemap()
+                  .children(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">d, depth</span>) </span>{ <span class="hljs-keyword">return</span> depth ? <span class="hljs-literal">null</span> : d._children; })
+                  .sort(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">a,b</span>) </span>{ <span class="hljs-keyword">return</span> a.id - b.id; })
+                  .ratio(height / width * <span class="hljs-number">0.5</span> * (<span class="hljs-number">1</span> + <span class="hljs-built_in">Math</span>.sqrt(<span class="hljs-number">5</span>)))
+                  .round(<span class="hljs-literal">false</span>)
+                  .value(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">d</span>) </span>{ <span class="hljs-keyword">return</span> d.id; });</div></div></div><div class="segment"><div class="comments "><div class="wrapper"><p>.size([width, height])</p>
+<p>.nodes(scope.data);
+.sticky(true);
+.value(function(d) { return d.id; } /);</p></div></div><div class="code"><div class="wrapper">                
+                svg.attr(<span class="hljs-string">'width'</span>, width + margin.left + margin.right)
+                  .attr(<span class="hljs-string">'height'</span>, height + margin.bottom + margin.top)
+                  .style(<span class="hljs-string">'margin-left'</span>, -margin.left + <span class="hljs-string">'px'</span>)
+                  .style(<span class="hljs-string">'margin-right'</span>, -margin.right + <span class="hljs-string">'px'</span>)
+                .append(<span class="hljs-string">'g'</span>)
+                    .style(<span class="hljs-string">'shape-rendering'</span>, <span class="hljs-string">'crispEdges'</span>)
+                    .style(<span class="hljs-string">'transform'</span>, <span class="hljs-string">"translate("</span> + margin.left + <span class="hljs-string">", "</span> + margin.top + <span class="hljs-string">")"</span>);
+
+                <span class="hljs-keyword">var</span> grandparent = svg.append(<span class="hljs-string">'g'</span>)
+                    .attr(<span class="hljs-string">'class'</span>, <span class="hljs-string">'grandparent'</span>);
+
+                grandparent.append(<span class="hljs-string">'rect'</span>)
+                    .attr(<span class="hljs-string">'y'</span>, -margin.top)
+                    .attr(<span class="hljs-string">'width'</span>, width)
+                    .attr(<span class="hljs-string">'height'</span>, margin.top);
+
+                grandparent.append(<span class="hljs-string">'text'</span>)
+                    .attr(<span class="hljs-string">'x'</span>, <span class="hljs-number">6</span>)
+                    .attr(<span class="hljs-string">'y'</span>, <span class="hljs-number">6</span> - margin.top)
+                    .attr(<span class="hljs-string">'dy'</span>, <span class="hljs-string">'.75em'</span>);
+
+
+                initialize(scope.data);
+                accumulate(scope.data);
+                layout(scope.data);
+                display(scope.data);
+
+                <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">initialize</span>(<span class="hljs-params">root</span>) </span>{
+                  root.x = root.y = <span class="hljs-number">0</span>;
+                  root.dx = width;
+                  root.dy = height;
+                  root.depth = <span class="hljs-number">0</span>;
+                }</div></div></div><div class="segment"><div class="comments "><div class="wrapper"><p>Aggregate the values for internal nodes. This is normally done by the
+treemap layout, but not here because of our custom implementation.
+We also take a snapshot of the original children (_children) to avoid
+the children being overwritten when when layout is computed.</p></div></div><div class="code"><div class="wrapper">                <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">accumulate</span>(<span class="hljs-params">d</span>) </span>{
+                  <span class="hljs-keyword">return</span> (d._children = d.children)
+                      ? d.id = d.children.reduce(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">p, v</span>) </span>{ <span class="hljs-keyword">return</span> p + accumulate(v); }, <span class="hljs-number">0</span>)
+                      : d.id;
+                }</div></div></div><div class="segment"><div class="comments "><div class="wrapper"><p>Compute the treemap layout recursively such that each group of siblings
+uses the same size (1×1) rather than the dimensions of the parent cell.
+This optimizes the layout for the current zoom state. Note that a wrapper
+object is created for the parent node for each group of siblings so that
+the parent’s dimensions are not discarded as we recurse. Since each group
+of sibling was laid out in 1×1, we must rescale to fit using absolute
+coordinates. This lets us use a viewport to zoom.</p></div></div><div class="code"><div class="wrapper">                <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">layout</span>(<span class="hljs-params">d</span>) </span>{
+                  <span class="hljs-built_in">console</span>.log(d);
+                  <span class="hljs-keyword">if</span> (d._children) {
+                    treemap.nodes({_children: d._children});
+                    d._children.forEach(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">c</span>) </span>{
+                      c.x = d.x + c.x * d.dx;
+                      c.y = d.y + c.y * d.dy;
+                      c.dx *= d.dx;
+                      c.dy *= d.dy;
+                      c.parent = d;
+                      layout(c);
+                    });
+                  }
+                }
+
+                <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">display</span>(<span class="hljs-params">d</span>) </span>{
+                  grandparent
+                      .datum(d.parent)
+                      .on(<span class="hljs-string">"click"</span>, transition)
+                    .select(<span class="hljs-string">"text"</span>)
+                      .text(name(d));
+
+                  <span class="hljs-keyword">var</span> g1 = svg.insert(<span class="hljs-string">"g"</span>, <span class="hljs-string">".grandparent"</span>)
+                      .datum(d)
+                      .attr(<span class="hljs-string">"class"</span>, <span class="hljs-string">"depth"</span>);
+
+                  <span class="hljs-keyword">var</span> g = g1.selectAll(<span class="hljs-string">"g"</span>)
+                      .data(d._children)
+                    .enter().append(<span class="hljs-string">"g"</span>);
+
+                  g.filter(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">d</span>) </span>{ <span class="hljs-keyword">return</span> d._children; })
+                      .classed(<span class="hljs-string">"children"</span>, <span class="hljs-literal">true</span>)
+                      .on(<span class="hljs-string">"click"</span>, transition);
+
+                  g.selectAll(<span class="hljs-string">".child"</span>)
+                      .data(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">d</span>) </span>{ <span class="hljs-keyword">return</span> d._children || [d]; })
+                    .enter().append(<span class="hljs-string">"rect"</span>)
+                      .attr(<span class="hljs-string">"class"</span>, <span class="hljs-string">"child"</span>)
+                      .call(rect);
+
+                  g.append(<span class="hljs-string">"rect"</span>)
+                      .attr(<span class="hljs-string">"class"</span>, <span class="hljs-string">"parent"</span>)
+                      .call(rect)
+                    .append(<span class="hljs-string">"title"</span>)
+                      .text(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">d</span>) </span>{ <span class="hljs-keyword">return</span> formatNumber(d.id); });
+
+                  g.append(<span class="hljs-string">"text"</span>)
+                      .attr(<span class="hljs-string">"dy"</span>, <span class="hljs-string">".75em"</span>)
+                      .text(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">d</span>) </span>{ <span class="hljs-keyword">return</span> d.name; })
+                      .call(text);
+
+                  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">transition</span>(<span class="hljs-params">d</span>) </span>{
+                    <span class="hljs-keyword">if</span> (transitioning || !d) <span class="hljs-keyword">return</span>;
+                    transitioning = <span class="hljs-literal">true</span>;
+
+                    <span class="hljs-keyword">var</span> g2 = display(d),
+                        t1 = g1.transition().duration(<span class="hljs-number">750</span>),
+                        t2 = g2.transition().duration(<span class="hljs-number">750</span>);</div></div></div><div class="segment"><div class="comments "><div class="wrapper"><p>Update the domain only after entering new elements.</p></div></div><div class="code"><div class="wrapper">                    x.domain([d.x, d.x + d.dx]);
+                    y.domain([d.y, d.y + d.dy]);</div></div></div><div class="segment"><div class="comments "><div class="wrapper"><p>Enable anti-aliasing during the transition.</p></div></div><div class="code"><div class="wrapper">                    svg.style(<span class="hljs-string">"shape-rendering"</span>, <span class="hljs-literal">null</span>);</div></div></div><div class="segment"><div class="comments "><div class="wrapper"><p>Draw child nodes on top of parent nodes.</p></div></div><div class="code"><div class="wrapper">                    svg.selectAll(<span class="hljs-string">".depth"</span>).sort(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">a, b</span>) </span>{ <span class="hljs-keyword">return</span> a.depth - b.depth; });</div></div></div><div class="segment"><div class="comments "><div class="wrapper"><p>Fade-in entering text.</p></div></div><div class="code"><div class="wrapper">                    g2.selectAll(<span class="hljs-string">"text"</span>).style(<span class="hljs-string">"fill-opacity"</span>, <span class="hljs-number">0</span>);</div></div></div><div class="segment"><div class="comments "><div class="wrapper"><p>Transition to the new view.</p></div></div><div class="code"><div class="wrapper">                    t1.selectAll(<span class="hljs-string">"text"</span>).call(text).style(<span class="hljs-string">"fill-opacity"</span>, <span class="hljs-number">0</span>);
+                    t2.selectAll(<span class="hljs-string">"text"</span>).call(text).style(<span class="hljs-string">"fill-opacity"</span>, <span class="hljs-number">1</span>);
+                    t1.selectAll(<span class="hljs-string">"rect"</span>).call(rect);
+                    t2.selectAll(<span class="hljs-string">"rect"</span>).call(rect);</div></div></div><div class="segment"><div class="comments "><div class="wrapper"><p>Remove the old node when the transition is finished.</p></div></div><div class="code"><div class="wrapper">                    t1.remove().each(<span class="hljs-string">"end"</span>, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>) </span>{
+                      svg.style(<span class="hljs-string">"shape-rendering"</span>, <span class="hljs-string">"crispEdges"</span>);
+                      transitioning = <span class="hljs-literal">false</span>;
+                    });
+                  }
+
+                  <span class="hljs-keyword">return</span> g;
+                }
+
+                <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">text</span>(<span class="hljs-params">text</span>) </span>{
+                  text.attr(<span class="hljs-string">"x"</span>, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">d</span>) </span>{ <span class="hljs-keyword">return</span> x(d.x) + <span class="hljs-number">6</span>; })
+                      .attr(<span class="hljs-string">"y"</span>, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">d</span>) </span>{ <span class="hljs-keyword">return</span> y(d.y) + <span class="hljs-number">6</span>; });
+                }
+
+                <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">rect</span>(<span class="hljs-params">rect</span>) </span>{
+                  rect.attr(<span class="hljs-string">"x"</span>, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">d</span>) </span>{ <span class="hljs-keyword">return</span> x(d.x); })
+                      .attr(<span class="hljs-string">"y"</span>, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">d</span>) </span>{ <span class="hljs-keyword">return</span> y(d.y); })
+                      .attr(<span class="hljs-string">"width"</span>, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">d</span>) </span>{ <span class="hljs-keyword">return</span> x(d.x + d.dx) - x(d.x); })
+                      .attr(<span class="hljs-string">"height"</span>, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">d</span>) </span>{ <span class="hljs-keyword">return</span> y(d.y + d.dy) - y(d.y); })
+                      .attr(<span class="hljs-string">"fill"</span>, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">d</span>) </span>{ <span class="hljs-keyword">return</span> d.children ? <span class="hljs-literal">null</span> : color(d.id); });
+                }
+
+                <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">name</span>(<span class="hljs-params">d</span>) </span>{
+                  <span class="hljs-keyword">return</span> d.parent
+                      ? name(d.parent) + <span class="hljs-string">"."</span> + d.name
+                      : d.name;
+                }</div></div></div><div class="segment"><div class="comments "><div class="wrapper"><p>var cells = svg.selectAll(&#39;.cell&#39;)
+    .data(treemap)
+    .enter()
+    .append(&#39;g&#39;)
+    .attr(&#39;class&#39;, &#39;cell&#39;);</p></div></div></div><div class="segment"><div class="comments "><div class="wrapper"><p>cells.append(&#39;rect&#39;)
+    .attr(&#39;x&#39;, function(d) { return d.x; })
+    .attr(&#39;y&#39;, function(d) { return d.y; })
+    .attr(&#39;width&#39;, function(d) { return d.dx; })
+    .attr(&#39;height&#39;, function(d) { return d.dy; })
+    .attr(&#39;fill&#39;, function(d) { 
+      console.log(d.categoryId);
+      return d.children ? null : color(d.categoryId); })
+    .attr(&#39;stroke&#39;, &#39;#000&#39;);</p></div></div></div><div class="segment"><div class="comments "><div class="wrapper"><p>cells.append(&#39;text&#39;)
+    .attr(&#39;x&#39;, function (d) { return d.x + d.dx/2; })
+    .attr(&#39;y&#39;, function (d) { return d.y + d.dy/2; })
+    .attr(&#39;text-anchor&#39;, &#39;middle&#39;)
+    .text(function(d) { return d.children ? null : d.categoryId; });</p></div></div><div class="code"><div class="wrapper">              }, <span class="hljs-number">800</span>); <span class="hljs-comment">//was 200</span>
+            };<span class="hljs-comment">//end scope.render function</span>
+          });<span class="hljs-comment">//end .then()</span>
+      }}<span class="hljs-comment">// end  link funct andreturn {}</span>
+  }]);<span class="hljs-comment">//end directive function</span>
+}());</div></div></div></div></body></html>

@@ -1,0 +1,5 @@
+.grandparent rect {
+  fill: teal;
+  cursor: pointer;
+  z-index: 99;
+}

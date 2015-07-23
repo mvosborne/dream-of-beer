@@ -1,0 +1,107 @@
+<!DOCTYPE html><html lang="en"><head><title>public/js/directives/ngBars</title></head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0"><meta name="groc-relative-root" content="../../../"><meta name="groc-document-path" content="public/js/directives/ngBars"><meta name="groc-project-path" content="public/js/directives/ngBars.js"><link rel="stylesheet" type="text/css" media="all" href="../../../assets/style.css"><script type="text/javascript" src="../../../assets/behavior.js"></script><body><div id="meta"><div class="file-path">public/js/directives/ngBars.js</div></div><div id="document"><div class="segment"><div class="code"><div class="wrapper">(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{ 
+<span class="hljs-pi">  'use strict'</span>;
+
+  angular.module(<span class="hljs-string">'myApp.directives'</span>)
+    .directive(<span class="hljs-string">'ngBars'</span>, [<span class="hljs-string">'$window'</span>, <span class="hljs-string">'$timeout'</span>, <span class="hljs-string">'d3'</span>, 
+    <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">$window, $timeout, d3</span>) </span>{
+      <span class="hljs-keyword">return</span> {
+        restrict: <span class="hljs-string">'A'</span>,
+        controller: <span class="hljs-string">'beerCtrl'</span>,
+        scope: {
+          <span class="hljs-comment">//= means bi-directional binding between the local scope property and the parent property; </span>
+          <span class="hljs-comment">//if the parent model changes, just like normal data binding, then the local property will reflect the change</span>
+
+          <span class="hljs-comment">//@ means binding local scope (string) to value of the DOM's scope </span>
+          <span class="hljs-comment">//so the value of the outer scope is available inside directive's scope</span>
+
+          <span class="hljs-comment">//&amp; means parent execution binding so it executes a function in the context of the parent scope</span>
+          <span class="hljs-comment">//when setting the value, a function wrapper  will be created and point to the parent function</span>
+          data: <span class="hljs-string">'=?'</span>, <span class="hljs-comment">// make the data bind optional so it doesn't error when at first data is undefined</span>
+          label: <span class="hljs-string">'@'</span>,  
+          onClick: <span class="hljs-string">'&amp;'</span>
+        },
+        link: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">scope, ele, attrs</span>) </span>{
+          d3.d3().then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">d3</span>) </span>{
+            <span class="hljs-keyword">var</span> renderTimeout;
+            <span class="hljs-keyword">var</span> margin = <span class="hljs-built_in">parseInt</span>(attrs.margin) || <span class="hljs-number">20</span>,
+                barHeight = <span class="hljs-built_in">parseInt</span>(attrs.barHeight) || <span class="hljs-number">20</span>,
+                barPadding = <span class="hljs-built_in">parseInt</span>(attrs.barPadding) || <span class="hljs-number">5</span>;
+
+            <span class="hljs-keyword">var</span> svg = d3.select(ele[<span class="hljs-number">0</span>])
+              .append(<span class="hljs-string">'svg'</span>)
+              .style(<span class="hljs-string">'width'</span>, <span class="hljs-string">'100%'</span>);
+   
+            $<span class="hljs-built_in">window</span>.onresize = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>) </span>{
+              scope.$apply();
+            };
+
+            scope.getStyles();
+            scope.$watch(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>) </span>{
+              <span class="hljs-keyword">return</span> angular.element($<span class="hljs-built_in">window</span>)[<span class="hljs-number">0</span>].innerWidth;
+            }, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>) </span>{
+              scope.render(scope.data);
+            });
+   
+            scope.$watch(<span class="hljs-string">'data'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">newData</span>) </span>{
+              scope.render(newData);
+            }, <span class="hljs-literal">true</span>);
+   
+            scope.render = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">data</span>) </span>{
+              svg.selectAll(<span class="hljs-string">'*'</span>).remove();
+   
+              <span class="hljs-keyword">if</span> (!data) {
+                <span class="hljs-built_in">console</span>.log(<span class="hljs-string">"no data"</span>);
+                <span class="hljs-keyword">return</span>;
+              }
+              <span class="hljs-keyword">if</span> (renderTimeout) clearTimeout(renderTimeout);
+   
+              renderTimeout = $timeout(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>) </span>{
+                <span class="hljs-keyword">var</span> width = d3.select(ele[<span class="hljs-number">0</span>])[<span class="hljs-number">0</span>][<span class="hljs-number">0</span>].offsetWidth - margin,
+                    height = (scope.data.length || <span class="hljs-number">5</span>) * (barHeight + barPadding),
+                    color = d3.scale.category20(),
+                    xScale = d3.scale.linear()
+                      .domain([<span class="hljs-number">0</span>, d3.max(data, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">d</span>) </span>{
+                        <span class="hljs-keyword">return</span> d.id;
+                      })])
+                      .range([width/<span class="hljs-number">2</span>, width]);
+                <span class="hljs-built_in">console</span>.log( scope.data);
+                svg.attr(<span class="hljs-string">'height'</span>, height);
+                svg.selectAll(<span class="hljs-string">'rect'</span>)
+                  .data(data)
+                  .enter()
+                    .append(<span class="hljs-string">'rect'</span>)
+                    .on(<span class="hljs-string">'click'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">d,i</span>) </span>{
+                      <span class="hljs-keyword">return</span> scope.getBeersInCategory(d.id);
+                    })
+                    .attr(<span class="hljs-string">'height'</span>, <span class="hljs-number">40</span>)
+                    .attr(<span class="hljs-string">'width'</span>, <span class="hljs-number">140</span>)
+                    .attr(<span class="hljs-string">'x'</span>, <span class="hljs-built_in">Math</span>.round(margin/<span class="hljs-number">2</span>))
+                    .attr(<span class="hljs-string">'y'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">d,i</span>) </span>{
+                      <span class="hljs-keyword">return</span> i * (barHeight + barPadding);
+                    })
+                    .attr(<span class="hljs-string">'fill'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">d</span>) </span>{
+                      <span class="hljs-keyword">return</span> color(d.id);
+                    })
+                    .transition()
+                      .duration(<span class="hljs-number">1000</span>)
+                      .attr(<span class="hljs-string">'width'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">d</span>) </span>{
+                        <span class="hljs-keyword">return</span> <span class="hljs-number">600</span>;
+                      });
+                svg.selectAll(<span class="hljs-string">'text'</span>)
+                  .data(data)
+                  .enter()
+                    .append(<span class="hljs-string">'text'</span>)
+                    .attr(<span class="hljs-string">'fill'</span>, <span class="hljs-string">'#fff'</span>)
+                    .attr(<span class="hljs-string">'y'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">d,i</span>) </span>{
+                      <span class="hljs-keyword">return</span> i * (barHeight + barPadding) + <span class="hljs-number">15</span>;
+                    })
+                    .attr(<span class="hljs-string">'x'</span>, <span class="hljs-number">15</span>)
+                    .text(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">d</span>) </span>{
+                      <span class="hljs-keyword">return</span> d.name + <span class="hljs-string">" (scored: "</span> + d.name + <span class="hljs-string">")"</span>;
+                    });
+              }, <span class="hljs-number">200</span>);
+            };<span class="hljs-comment">//end scope.render function</span>
+          });<span class="hljs-comment">//end .then()</span>
+      }}<span class="hljs-comment">// end  link funct andreturn {}</span>
+  }]);<span class="hljs-comment">//end directive function</span>
+}());</div></div></div></div></body></html>
